@@ -132,20 +132,6 @@ pub struct Display
 	count_until_vram_used: u32
 }
 
-struct BlittableWindow<'a>
-{
-	window: &'a mut sdl2::video::Window,
-	event_pump: &'a sdl2::EventPump
-}
-
-impl<'a> AsMut<sdl2::surface::SurfaceRef> for BlittableWindow<'a>
-{
-	fn as_mut(&mut self) -> &mut sdl2::surface::SurfaceRef
-	{
-		self.window.surface_mut(self.event_pump).unwrap()
-	}
-}
-
 impl Display
 {
 	pub fn new(sdl: &sdl2::Sdl) -> Display
@@ -218,29 +204,23 @@ impl Display
 						let chr = mem.read_u8(addr);
 						let attr = mem.read_u8(addr + 1);
 
-						let src_rect = sdl2::rect::Rect::new(((chr % 32) as i32) * 8, ((chr / 32) as i32) * 8, 8, 8).unwrap();
-						let dst_rect = sdl2::rect::Rect::new(x as i32 * 8, y as i32 * 16, 8, 16).unwrap();
+						let src_rect = sdl2::rect::Rect::new(((chr % 32) as i32) * 8, ((chr / 32) as i32) * 8, 8, 8);
+						let dst_rect = sdl2::rect::Rect::new(x as i32 * 8, y as i32 * 16, 8, 16);
 
 						let text_color = CGA_PALETTE[(attr & 0x0f) as usize];
 						let back_color = CGA_PALETTE[((attr >> 4) & 0x7) as usize]; // Last bit is blink/not blink
 
-						self.window.surface_mut(event_pump).unwrap().fill_rect(dst_rect, back_color).unwrap();
+						self.window.surface(event_pump).unwrap().fill_rect(dst_rect, back_color).unwrap();
 						self.font.set_color_mod(text_color);
 
-						let target = BlittableWindow
-						{
-							window: &mut self.window,
-							event_pump: &event_pump
-						};
-
-						self.font.blit_scaled(src_rect, target, dst_rect).unwrap();
+						self.font.blit_scaled(src_rect, &mut self.window.surface(event_pump).unwrap(), dst_rect).unwrap();
 					}
 				}
 
 				/* Display cursor */
 				let (x, y) = self.tty_coords(mem, self.cur_page);
-				let cur_rect = sdl2::rect::Rect::new(x as i32 * 8, y as i32 * 16 + 14, 8, 2).unwrap();
-				self.window.surface_mut(event_pump).unwrap().fill_rect(cur_rect, CGA_PALETTE[7]).unwrap();
+				let cur_rect = sdl2::rect::Rect::new(x as i32 * 8, y as i32 * 16 + 14, 8, 2);
+				self.window.surface(event_pump).unwrap().fill_rect(cur_rect, CGA_PALETTE[7]).unwrap();
 			}
 			GraphicMode::G640200 =>
 			{
@@ -251,22 +231,16 @@ impl Display
 						let addr = self.page_addr(self.cur_page) + (y%2) * 8192 + (y / 2) * 80 + x;
 						let block = mem.read_u8(addr);
 						
-						let src_rect = sdl2::rect::Rect::new(0, block as i32, 8, 1).unwrap();
-						let dst_rect = sdl2::rect::Rect::new(x as i32 * 8, (y as i32) * 2, 8, 2).unwrap();
+						let src_rect = sdl2::rect::Rect::new(0, block as i32, 8, 1);
+						let dst_rect = sdl2::rect::Rect::new(x as i32 * 8, (y as i32) * 2, 8, 2);
 
-						let target = BlittableWindow
-						{
-							window: &mut self.window,
-							event_pump: &event_pump
-						};
-
-						self.horrible_bw_surface_table.blit_scaled(src_rect, target, dst_rect).unwrap();
+						self.horrible_bw_surface_table.blit_scaled(src_rect, &mut self.window.surface(event_pump).unwrap(), dst_rect).unwrap();
 					}
 				}
 			}
 		}
 
-		self.window.update_surface().unwrap();
+        self.window.surface(event_pump).unwrap().update_window();
 	}
 
 	pub fn set_mode(&mut self, mem: &mut Memory, mode: GraphicMode)

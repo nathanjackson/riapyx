@@ -67,11 +67,11 @@ impl HW
 					{ keyboard.on_keyup(cpu, scancode) }
 				Event::MouseMotion {timestamp:_,window_id:_,which:_,mousestate:_,x:_,y:_,xrel,yrel} =>
 					{ mouse.on_motion(xrel, yrel) }
-				Event::MouseButtonDown {timestamp:_,window_id:_,which:_,mouse_btn,x:_,y:_} =>
+				Event::MouseButtonDown {timestamp:_,window_id:_,which:_,mouse_btn,x:_,y:_, clicks: 1} =>
 					{ mouse.on_button_down(mouse_btn) }
-				Event::MouseButtonUp {timestamp:_,window_id:_,which:_,mouse_btn,x:_,y:_} =>
+				Event::MouseButtonUp {timestamp:_,window_id:_,which:_,mouse_btn,x:_,y:_, clicks: 1} =>
 					{ mouse.on_button_up(mouse_btn) },
-				Event::MouseWheel {timestamp:_, window_id:_, which:_, x:_, y} =>
+				Event::MouseWheel {timestamp:_, window_id:_, which:_, x:_, y, direction: sdl2::mouse::MouseWheelDirection::Normal } =>
 					{
 						if y > 0 { sdl.mouse().set_relative_mouse_mode(false); mouse.set_speed_divisor(1); }
 						else if y < 0 { sdl.mouse().set_relative_mouse_mode(true); mouse.set_speed_divisor(1); }

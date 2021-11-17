@@ -2,8 +2,6 @@ use std::collections::vec_deque::VecDeque;
 
 use super::serial::SerialDevice;
 
-use super::sdl2::mouse::Mouse as SdlMouse;
-
 pub struct Mouse
 {
 	hw_init: bool,
@@ -117,16 +115,16 @@ impl Mouse
 		}
 	}
 
-	pub fn on_button_down(&mut self, button: SdlMouse)
+	pub fn on_button_down(&mut self, button: sdl2::mouse::MouseButton)
 	{
 		match button
 		{
-			SdlMouse::Left => 
+			sdl2::mouse::MouseButton::Left =>
 			{
 				self.left_button_pressed = true;
 				mouse_print!("Left pressed")
 			}
-			SdlMouse::Right => 
+			sdl2::mouse::MouseButton::Right =>
 			{
 				self.right_button_pressed = true;
 				mouse_print!("Right pressed")
@@ -137,16 +135,16 @@ impl Mouse
 		self.push_event(0, 0);
 	}
 
-	pub fn on_button_up(&mut self, button: SdlMouse)
+	pub fn on_button_up(&mut self, button: sdl2::mouse::MouseButton)
 	{
 		match button
 		{
-			SdlMouse::Left => 
+			sdl2::mouse::MouseButton::Left =>
 			{
 				self.left_button_pressed = false;
 				mouse_print!("Left released")
 			}
-			SdlMouse::Right => 
+			sdl2::mouse::MouseButton::Right =>
 			{
 				self.right_button_pressed = false;
 				mouse_print!("Right released")
