@@ -13,6 +13,8 @@ use super::instruction::*;
 use super::reg_access::*;
 use super::base::*;
 
+pub use num_traits::ops::wrapping::*;
+
 pub trait Operand<ValueType>
 {
 	fn zero_flag(&self) -> bool;
@@ -147,11 +149,13 @@ impl Operand<u8> for u8
 	}
 	fn inc(&mut self)
 	{
-		*self += 1
+		//*self += 1
+        *self = self.wrapping_add(1)
 	}
 	fn dec(&mut self)
 	{
-		*self -= 1
+        *self = self.wrapping_sub(1)
+		//*self -= 1
 	}
 
 	fn shl1_oc_flags_fo(&self) -> (bool, bool)
@@ -451,11 +455,13 @@ impl Operand<u16> for u16
 	}
 	fn inc(&mut self)
 	{
-		*self += 1
+		//*self += 1
+        *self = self.wrapping_add(1)
 	}
 	fn dec(&mut self)
 	{
-		*self -= 1
+		//*self -= 1
+        *self = self.wrapping_sub(1)
 	}
 
 	fn shl1_oc_flags_fo(&self) -> (bool, bool)
@@ -688,7 +694,9 @@ pub trait OperandAccess<OperandType>
 		BitOr<Self::ValueType, Output=Self::ValueType> +
 		BitAnd<Self::ValueType, Output=Self::ValueType> +
 		Add<Self::ValueType, Output=Self::ValueType> +
+        WrappingAdd<Output=Self::ValueType> +
 		Sub<Self::ValueType, Output=Self::ValueType> +
+        WrappingSub<Output=Self::ValueType> +
 		Shl<u8, Output=Self::ValueType> +
 		Shr<u8, Output=Self::ValueType> +
 		Eq +
@@ -847,12 +855,12 @@ impl CPU
 				WOperand::Indirect8iDis(ref reg, dis) =>
 				{
 					let (seg, addr) = self.get_ireg_addr(&reg);
-					(seg, addr + ((dis as i16) as u16))
+					(seg, addr.wrapping_add((dis as i16) as u16))
 				}
 				WOperand::Indirect16uDis(ref reg, dis) =>
 				{
 					let (seg, addr) = self.get_ireg_addr(&reg);
-					(seg, addr + dis)	
+					(seg, addr.wrapping_add(dis))
 				}
 				WOperand::Immediate(_) => 
 					panic!("Attempting to load 32-bit value from an immediate 16-bit operand (cs:ip={:04x}:{:04x})", self.cs, self.ip),
@@ -870,7 +878,7 @@ impl CPU
 	{
 		match *to
 		{
-			FlowControlOperand::DirectSeg(inc) => (false, self.cs, self.ip + inc),
+			FlowControlOperand::DirectSeg(inc) => (false, self.cs, self.ip.wrapping_add(inc)),
 			FlowControlOperand::IndirectSeg(ref op) => (false, self.cs, self.load_operand(mem, op)),
 			FlowControlOperand::DirectInterSeg(cs, ip) => (true, cs, ip),
 			FlowControlOperand::IndirectInterSeg(ref op) =>

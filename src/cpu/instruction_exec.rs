@@ -174,16 +174,16 @@ impl CPU
 
 		match op
 		{
-			SingleBImmOperandOpCode::JMPS => self.ip += signed as u16,
+			SingleBImmOperandOpCode::JMPS => self.ip = self.ip.wrapping_add(signed as u16),
 			SingleBImmOperandOpCode::JB =>
 				if self.flags & FLAG_C != 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JNB =>
 				if self.flags & FLAG_C == 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JO =>
 				if self.flags & FLAG_O != 0
@@ -208,72 +208,72 @@ impl CPU
 			SingleBImmOperandOpCode::JBE =>
 				if self.flags & FLAG_Z != 0 || self.flags & FLAG_C != 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JNBE =>
 				if self.flags & FLAG_Z == 0 && self.flags & FLAG_C == 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JLE =>
 				if self.flags & FLAG_Z != 0 || ((self.flags & FLAG_S != 0) != (self.flags & FLAG_O != 0))
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JNLE =>
 				if self.flags & FLAG_Z == 0 && ((self.flags & FLAG_S != 0) == (self.flags & FLAG_O != 0))
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JE =>
 				if self.flags & FLAG_Z != 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JNE =>
 				if self.flags & FLAG_Z == 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JS =>
 				if self.flags & FLAG_S != 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JNS =>
 				if self.flags & FLAG_S == 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JL =>
 				if (self.flags & FLAG_S != FLAG_S) != (self.flags & FLAG_O != FLAG_O)
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JNL =>
 				if (self.flags & FLAG_S != FLAG_S) == (self.flags & FLAG_O != FLAG_O)
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::JCXZ =>
 				if self.cx == 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				},
 			SingleBImmOperandOpCode::LOOP =>
 			{
-				self.cx -= 1;
+				self.cx = self.cx.wrapping_sub(1);
 				if self.cx != 0
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				}
 			},
 			SingleBImmOperandOpCode::LOOPNZ =>
 			{
-				self.cx -= 1;
+				self.cx = self.cx.wrapping_sub(1);
 				if self.cx != 0 && (self.flags & FLAG_Z == 0)
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				}
 			},
 			SingleBImmOperandOpCode::LOOPZ =>
@@ -281,7 +281,7 @@ impl CPU
 				self.cx -= 1;
 				if self.cx != 0 && (self.flags & FLAG_Z != 0)
 				{
-					self.ip += signed as u16
+					self.ip = self.ip.wrapping_add(signed as u16)
 				}
 			},
 			SingleBImmOperandOpCode::INB =>
@@ -363,8 +363,8 @@ impl CPU
 						=> unreachable!(),
 					WOperand::Direct(addr) => addr,
 					WOperand::Indirect(ref ir) => self.get_ireg_addr(ir).1,
-					WOperand::Indirect8iDis(ref ir, dis) => self.get_ireg_addr(ir).1 + ((dis as i16) as u16),
-					WOperand::Indirect16uDis(ref ir, dis) => self.get_ireg_addr(ir).1 + dis,
+					WOperand::Indirect8iDis(ref ir, dis) => self.get_ireg_addr(ir).1.wrapping_add(((dis as i16) as u16)),
+					WOperand::Indirect16uDis(ref ir, dis) => self.get_ireg_addr(ir).1.wrapping_add(dis),
 				};
 
 				store(self, mem, offset);
@@ -426,7 +426,7 @@ impl CPU
 		{
 			TwoOperandsOpCode::ADD => 
 			{
-				let result = from_value + to_value;
+				let result = from_value.wrapping_add(&to_value);
 				self.set_oca_flags(result.add_oca_flags(to_value, from_value));
 				self.set_szp_flags(&result);
 				store(self, mem, result)
@@ -434,7 +434,7 @@ impl CPU
 			TwoOperandsOpCode::ADC => 
 			{
 				let has_carry = (self.flags & FLAG_C) == FLAG_C;
-				let mut result = from_value + to_value;
+				let mut result = from_value.wrapping_add(&to_value);
 				if has_carry
 				{
 					result.inc();
@@ -445,7 +445,7 @@ impl CPU
 			},
 			TwoOperandsOpCode::SUB => 
 			{
-				let result = to_value - from_value;
+				let result = to_value.wrapping_sub(&from_value);
 				self.set_oca_flags(result.sub_oca_flags(to_value, from_value));
 				self.set_szp_flags(&result);
 				store(self, mem, result)
@@ -453,7 +453,7 @@ impl CPU
 			TwoOperandsOpCode::SBB => 
 			{
 				let has_borrow = (self.flags & FLAG_C) == FLAG_C;
-				let mut result = to_value - from_value;
+				let mut result = to_value.wrapping_sub(&from_value);
 				if has_borrow
 				{
 					result.dec();
@@ -486,7 +486,7 @@ impl CPU
 			TwoOperandsOpCode::MOV => store(self, mem, from_value),
 			TwoOperandsOpCode::CMP => 
 			{
-				let result = to_value - from_value;
+				let result = to_value.wrapping_sub(&from_value);
 				self.set_oca_flags(result.sub_oca_flags(to_value, from_value));
 				self.set_szp_flags(&result);
 				/* TODO */
@@ -775,41 +775,41 @@ impl CPU
 			{
 				let value = self.load_operand(mem, src);
 				self.store_operand(mem, dst, value);
-				self.si += increment;
-				self.di += increment;
+				self.si = self.si.wrapping_add(increment);
+				self.di = self.di.wrapping_add(increment);
 			},
 			ImplicitOperandOpCode::LODS =>
 			{
 				let value = self.load_operand(mem, src);
 				self.set_acc(value);
-				self.si += increment;
+				self.si = self.si.wrapping_add(increment);
 			},
 			ImplicitOperandOpCode::STOS =>
 			{
 				let value = self.get_acc();
 				self.store_operand(mem, dst, value);
-				self.di += increment;
+				self.di = self.di.wrapping_add(increment);
 			},
 			ImplicitOperandOpCode::CMPS =>
 			{
 				let from_value = self.load_operand(mem, src);
 				let to_value = self.load_operand(mem, dst);
-				let result = from_value - to_value;
+				let result = from_value.wrapping_sub(&to_value);
 				self.set_oca_flags(result.sub_oca_flags(from_value, to_value));
 				self.set_szp_flags(&result);
 
-				self.si += increment;
-				self.di += increment;
+				self.si = self.si.wrapping_add(increment);
+				self.di = self.di.wrapping_add(increment);
 			},
 			ImplicitOperandOpCode::SCAS =>
 			{
 				let from_value = self.get_acc();
 				let to_value = self.load_operand(mem, dst);
-				let result = from_value - to_value;
+				let result = from_value.wrapping_sub(&to_value);
 				self.set_oca_flags(result.sub_oca_flags(from_value, to_value));
 				self.set_szp_flags(&result);
 
-				self.di += increment;
+				self.di = self.di.wrapping_add(increment);
 			}
 		}
 

@@ -30,11 +30,11 @@ As floppy-switching is not supported and as this was never tested, it is unlikel
 
 Building
 --------
-You can use cargo to build the project; however, you must have it disable disable overflow checks as the emulator expects overflows to wrap instead of aborting execution. In addition, this project uses rust-sdl2, so you should follow the installation instructions of the rust-sdl2 crate for your platform at: https://github.com/AngryLawyer/rust-sdl2 (mainly for Windows and OS X users).
+This project uses rust-sdl2, so you should follow the installation instructions of the rust-sdl2 crate for your platform at: https://github.com/AngryLawyer/rust-sdl2 (mainly for Windows and OS X users).
 
 The following cargo command can be used to build this project with sane parameters:
 
-    cargo rustc --release --features "storage_log machine_log vram-dirty" -- -Z force-overflow-checks=off
+    cargo rustc --release --features "storage_log machine_log vram-dirty"
 
 The following cargo features can be toggled:
 
