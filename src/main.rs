@@ -19,6 +19,8 @@ extern crate rustc_serialize;
 extern crate docopt;
 use docopt::Docopt;
 
+extern crate num_traits;
+
 const USAGE: &'static str = 
 "Usage:
 	riapyx [--boot=<drive>] [--hd=<image>] [--fd=<image>]
@@ -68,16 +70,6 @@ fn u32_from_hex_str(s: &str) -> u32
 fn main()
 {
 	let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
-
-	println!("Checking that integers are wrapping properly...");
-	
-	let mut x: u8 = 255;
-	x += 1;
-	if x != 0
-	{
-		panic!("No, they're not. (255+1) % 256 = {}", x);
-	}
-	println!("ok");
 
 	let boot_drive = 
 		match &args.flag_boot[..]
