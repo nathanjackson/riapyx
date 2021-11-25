@@ -106,6 +106,25 @@ impl DisketteParameters
 			motor_start_time: 0x0
 		}
 	}
+
+	pub fn floppy_320kb() -> DisketteParameters
+	{
+		DisketteParameters
+		{
+			step_rate_hi_head_unload_time_lo: 0xff,
+			head_load_time_hi7b_non_dma_lo: 0x02,
+			delay_until_motor_off: 0,
+			bytes_per_sector: 0x2,
+			sectors_per_track: 9,
+			gap_len_between_sectors: 0x1B,
+			data_length: 0x0,
+			gap_length: 0x6c,
+			format_filler: 0xf6,
+			head_settle_time: 0x0,
+			motor_start_time: 0x0
+		}
+	}
+
 }
 
 impl HardDiskParameters
@@ -225,7 +244,7 @@ impl Storage
 		Storage
 		{
 			file: OpenOptions::new().read(true).write(true).open(filename).unwrap(),
-			parameters: DriveParameters::Floppy(DisketteParameters::floppy_1_44mb())
+			parameters: DriveParameters::Floppy(DisketteParameters::floppy_320kb())
 		}
 	}
 

@@ -291,9 +291,15 @@ impl BIOS
 					{
 						0x0 => 
 						{
-							let status = storage.reset(mem);
-							cpu.set_reg(BReg::AH, status.get_bios_code());
-							self.set_carry_value(cpu, mem, status != storage::Status::Success);
+							// I think we can simply return OK for reset disk
+							// system.
+							cpu.set_reg(BReg::AH, 0);
+							self.set_carry_value(cpu, mem, false);
+						}
+						0x1 =>
+						{
+							bios_print!("Disk Status not implemented, returning no error.");
+							cpu.set_reg(BReg::AL, 0);
 						}
 						0x2 =>
 						{
