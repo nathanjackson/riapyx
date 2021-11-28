@@ -20,6 +20,7 @@ extern crate docopt;
 use docopt::Docopt;
 
 extern crate num_traits;
+extern crate iced_x86;
 
 const USAGE: &'static str = 
 "Usage:

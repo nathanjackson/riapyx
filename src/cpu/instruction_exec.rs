@@ -711,7 +711,24 @@ impl CPU
 
 	pub fn run_sbop_ins(&mut self, mem: &mut Memory, op: SingleOperandOpCode, oper: BOperand)
 	{
-		self.run_sgop_ins(mem, op, &oper)
+        match op {
+            SingleOperandOpCode::AAM => {
+                let tmp = self.get_reg(BReg::AL);
+                match oper {
+                    BOperand::Immediate(imm8) => {
+                        let quot = tmp / imm8;
+                        let rem = tmp % imm8;
+                        self.set_reg(BReg::AH, quot);
+                        self.set_reg(BReg::AL, rem);
+                        self.set_flag_value(FLAG_S, rem.sign_flag());
+                        self.set_flag_value(FLAG_Z, rem.zero_flag());
+                        self.set_flag_value(FLAG_P, rem.parity_flag());
+                    }
+                    _ => panic!("Unexpected Operand Type.")
+                }
+            }
+            _ => self.run_sgop_ins(mem, op, &oper)
+        }
 	}
 
 	pub fn run_swop_ins(&mut self, mem: &mut Memory, op: SingleOperandOpCode, oper: WOperand)

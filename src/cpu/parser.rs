@@ -155,11 +155,41 @@ fn dispatch_w <OpCodeType, ByteFunc, WordFunc> (opcode: OpCodeType, w: u8, byte:
 	}
 }
 
+pub fn decode_with_iced(bytecode: &[u8]) -> SizedInstruction
+{
+	let mut decoder = iced_x86::Decoder::new(16, bytecode, iced_x86::DecoderOptions::NONE);
+	let instr = decoder.decode();
+
+	let opcode = instr.code();
+
+	match opcode {
+		iced_x86::Code::Aam_imm8 => {
+			let op_kind = instr.op0_kind();
+			match op_kind {
+				iced_x86::OpKind::Immediate8 => {
+					let imm = instr.immediate8();
+
+					SizedInstruction {
+						instruction: Instruction::SingleBOperand(SingleOperandOpCode::AAM, BOperand::Immediate(imm)),
+						size: instr.len() as u16
+					}
+				},
+				_ => panic!("Unexpected operand type.")
+			}
+		},
+		_ => invalid_instruction()
+	}
+}
+
 pub fn parse_instruction(bytecode: &[u8]) -> SizedInstruction
 {
 	/* TODO: ** prefixes ** */
 	let sized_ins = prefix4bit(bytecode);
-	sized_ins
+
+	match sized_ins.instruction {
+		Instruction::Invalid => decode_with_iced(bytecode),
+		_ => sized_ins
+	}
 }
 
 // Catch immediate mov to reg

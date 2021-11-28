@@ -78,7 +78,7 @@ impl Machine
 	{
 		self.cpu.dump();
 		let (cs, ip) = self.get_pc();
-		self.disas(cs, ip, 3);
+		self.disas(cs, ip, 1);
 	}
 
 	pub fn print_memory(&self, seg: u16, addr: u16, size: u32)
