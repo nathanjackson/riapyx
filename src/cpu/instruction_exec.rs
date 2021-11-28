@@ -11,14 +11,14 @@ impl CPU
 {
 	fn stack_push(&mut self, mem: &mut Memory, val: u16)
 	{
-		self.sp -= 2;
+		self.sp = self.sp.wrapping_sub(2);
 		self.store_memory_u16_noov(mem, self.ss, self.sp, val);
 	}
 
 	fn stack_pop(&mut self, mem: &Memory) -> u16
 	{
 		let value = self.load_memory_u16_noov(mem, self.ss, self.sp);
-		self.sp += 2;
+		self.sp = self.sp.wrapping_add(2);
 		value
 	}
 
