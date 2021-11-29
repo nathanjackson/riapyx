@@ -13,6 +13,9 @@ use std::io::prelude::*;
 use std::string::String;
 use std::collections::HashMap;
 use std::env::args;
+use std::thread;
+use std::sync::mpsc;
+use std::sync::mpsc::{Sender, Receiver};
 use bios::BootDrive;
 
 extern crate rustc_serialize;
@@ -68,6 +71,109 @@ fn u32_from_hex_str(s: &str) -> u32
 	res
 }
 
+trait Command
+{
+    fn execute(&self, m: &machine::Machine);
+}
+
+struct QuitCommand { }
+
+impl Command for QuitCommand
+{
+    fn execute(&self, m: &machine::Machine)
+    {
+        std::process::exit(0);
+    }
+}
+
+struct DumpCommand
+{
+    seg: u16,
+    addr: u16
+}
+
+impl Command for DumpCommand
+{
+    fn execute(&self, m: &machine::Machine)
+    {
+        m.print_memory(self.seg, self.addr, 16);
+    }
+}
+
+//type Command = Box<impl Fn() + Send>;
+
+//fn do_quit_cmd()
+//{
+//    std::process::exit(0);
+//}
+
+//fn do_disas_cmd(seg: u16, addr: u16)
+//{
+    //m.print_memory(seg, addr, 16);
+
+				/*let args = (words.next(), words.next());
+				match args
+				{
+					(Some(seg_str), Some(addr_str)) =>
+					{
+						let seg = u32_from_hex_str(seg_str) as u16;
+						let addr = u32_from_hex_str(addr_str) as u16;
+
+						m.print_memory(seg, addr, 16);
+					},
+					_ => debug_print!("Usage: d [segment] [address]")
+				}
+			}*/
+//}
+
+
+fn console_thread(tx: Sender<Box<dyn Command + Send>>)
+{
+    loop {
+        print!("debug> ");
+        io::stdout().flush().unwrap();
+        let mut cmd_str = String::new();
+        io::stdin().read_line(&mut cmd_str).unwrap();
+
+		let mut words = cmd_str.split_whitespace();
+
+        let cmd: Box<dyn Command + Send>;
+		let word0 = words.next();
+		match word0
+		{
+            Some("q") => { 
+                cmd = Box::new(QuitCommand{ });
+            }
+            Some("d") => {
+				let args = (words.next(), words.next());
+				match args
+				{
+					(Some(seg_str), Some(addr_str)) =>
+					{
+						let seg = u32_from_hex_str(seg_str) as u16;
+						let addr = u32_from_hex_str(addr_str) as u16;
+
+                        cmd = Box::new(DumpCommand{
+                            seg,
+                            addr
+                        });
+					},
+					_ => {
+                        debug_print!("Usage: d [segment] [address]");
+                        continue
+                    }
+                }
+			}
+            _ => {
+                println!("Bad command.");
+                continue
+            }
+        }
+
+        tx.send(cmd);
+    }
+}
+
 fn main()
 {
 	let args: Args = Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
@@ -100,7 +206,29 @@ fn main()
 				args.flag_hd);
 	m.dump();
 
-	let mut bkpt_addr: HashMap<i32, (u16, u16)> = HashMap::new();
+    // channel to communicate console commands to the emulator loop
+    let (tx, rx): (Sender<Box<dyn Command + Send>>, Receiver<Box<dyn Command + Send>>) = mpsc::channel();
+
+    // console thread
+    let console_thread_handle = thread::spawn(move || {
+        console_thread(tx);
+    });
+
+    // main emulator loop
+    loop {
+        match rx.try_recv() {
+            Ok(cmd) => {
+                (*cmd).execute(&m);
+            }
+            Err(_) => {
+                m.step();
+            }
+        }
+    }
+
+    console_thread_handle.join().unwrap();
+
+	/*let mut bkpt_addr: HashMap<i32, (u16, u16)> = HashMap::new();
 	let mut addr_bkpt: HashMap<(u16, u16), i32> = HashMap::new();
 	let mut next_bkpt_idx = 0;
 
@@ -110,6 +238,8 @@ fn main()
 		io::stdout().flush().unwrap();
 		let mut cmd = String::new();
 		io::stdin().read_line(&mut cmd).unwrap();
+
+        m.hw.sdl.event().unwrap().flush_events(0x0, 0xffffffff);
 
 		let mut words = cmd.split_whitespace();
 
@@ -234,5 +364,5 @@ fn main()
 				m.dump();
 			}
 		}
-	}
+	}*/
 }
