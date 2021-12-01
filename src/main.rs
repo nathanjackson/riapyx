@@ -13,9 +13,9 @@ use std::io::prelude::*;
 use std::string::String;
 use std::collections::HashMap;
 use std::env::args;
-use std::thread;
+use std::{thread, time};
 use std::sync::mpsc;
-use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::{SyncSender, Receiver};
 use bios::BootDrive;
 
 extern crate rustc_serialize;
@@ -127,7 +127,7 @@ impl Command for DumpCommand
 //}
 
 
-fn console_thread(tx: Sender<Box<dyn Command + Send>>)
+fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
 {
     loop {
         print!("debug> ");
@@ -207,7 +207,7 @@ fn main()
 	m.dump();
 
     // channel to communicate console commands to the emulator loop
-    let (tx, rx): (Sender<Box<dyn Command + Send>>, Receiver<Box<dyn Command + Send>>) = mpsc::channel();
+    let (tx, rx): (SyncSender<Box<dyn Command + Send>>, Receiver<Box<dyn Command + Send>>) = mpsc::sync_channel(1);
 
     // console thread
     let console_thread_handle = thread::spawn(move || {
