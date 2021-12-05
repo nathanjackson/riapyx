@@ -73,14 +73,14 @@ fn u32_from_hex_str(s: &str) -> u32
 
 trait Command
 {
-    fn execute(&self, m: &machine::Machine);
+    fn execute(&self, m: &mut machine::Machine);
 }
 
 struct QuitCommand { }
 
 impl Command for QuitCommand
 {
-    fn execute(&self, m: &machine::Machine)
+    fn execute(&self, m: &mut machine::Machine)
     {
         std::process::exit(0);
     }
@@ -94,9 +94,19 @@ struct DumpCommand
 
 impl Command for DumpCommand
 {
-    fn execute(&self, m: &machine::Machine)
+    fn execute(&self, m: &mut machine::Machine)
     {
         m.print_memory(self.seg, self.addr, 16);
+    }
+}
+
+struct ContinueCommand { }
+
+impl Command for ContinueCommand
+{
+    fn execute(&self, m: &mut machine::Machine)
+    {
+        m.resume();
     }
 }
 
@@ -164,6 +174,9 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
                     }
                 }
 			}
+            Some("c") => {
+                cmd = Box::new(ContinueCommand{ });
+            }
             _ => {
                 println!("Bad command.");
                 continue
@@ -218,7 +231,7 @@ fn main()
     loop {
         match rx.try_recv() {
             Ok(cmd) => {
-                (*cmd).execute(&m);
+                (*cmd).execute(&mut m);
             }
             Err(_) => {
                 m.step();

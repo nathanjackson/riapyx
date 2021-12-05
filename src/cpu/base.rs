@@ -49,6 +49,7 @@ pub enum RepPrefix
 pub enum CPUState
 {
 	Running,
+    Paused,
 	Crashed
 }
 
@@ -106,7 +107,7 @@ impl CPU
 			flags: FLAG_SET_8086,
 			segment_override_prefix: None,
 			rep_prefix: None,
-			state: CPUState::Running,
+			state: CPUState::Paused,
 			pending_interrupts: VecDeque::<u8>::new(),
 			log: trace_file
 		}

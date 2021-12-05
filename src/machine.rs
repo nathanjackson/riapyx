@@ -50,6 +50,11 @@ impl Machine
 
 	pub fn step(&mut self)
 	{
+        if !self.is_running() {
+            self.hw.try_pump_event(&mut self.cpu);
+            return;
+        }
+
 		self.clock += 1;
 
 		if self.clock % 1000 == 0
@@ -151,4 +156,9 @@ impl Machine
 	{
 		self.cpu.state == CPUState::Running && self.bios.state == BIOSState::Ok
 	}
+
+    pub fn resume(&mut self)
+    {
+        self.cpu.state = CPUState::Running;
+    }
 }
