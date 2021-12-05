@@ -100,13 +100,26 @@ impl Command for DumpCommand
     }
 }
 
-struct ContinueCommand { }
+struct ContinueCommand
+{
+    trace: bool
+}
 
 impl Command for ContinueCommand
 {
     fn execute(&self, m: &mut machine::Machine)
     {
-        m.resume();
+        m.resume(self.trace);
+    }
+}
+
+struct TraceCommand { }
+
+impl Command for TraceCommand
+{
+    fn execute(&self, m: &mut machine::Machine)
+    {
+        println!("not yet implemented");
     }
 }
 
@@ -174,8 +187,11 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
                     }
                 }
 			}
-            Some("c") => {
-                cmd = Box::new(ContinueCommand{ });
+            Some("c") | Some("t") => {
+                let trace = Some("t") == word0;
+                cmd = Box::new(ContinueCommand{
+                    trace
+                });
             }
             _ => {
                 println!("Bad command.");

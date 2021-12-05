@@ -24,7 +24,9 @@ pub struct Machine
 
 	clock: u32,
 	last_time_ns: u64, // Only updated every 1k cycles
-	last_mcycle_ns: u64
+	last_mcycle_ns: u64,
+
+    trace: bool
 }
 
 impl Machine
@@ -39,7 +41,8 @@ impl Machine
 			hw: HW::new(floppy_filename, hdd_filename),
 			clock: 0,
 			last_time_ns: time::precise_time_ns(),
-			last_mcycle_ns: time::precise_time_ns()
+			last_mcycle_ns: time::precise_time_ns(),
+            trace: false
 		}
 	}
 
@@ -64,6 +67,10 @@ impl Machine
 
 		self.cpu.step(&mut self.memory, &mut self.hw, &mut self.bios);
 		self.hw.step(&mut self.cpu, &mut self.memory, self.clock, self.last_time_ns);
+
+        if self.trace {
+            self.dump_trace();
+        }
 
 		if self.clock % 10000000 == 0
 		{
@@ -157,8 +164,9 @@ impl Machine
 		self.cpu.state == CPUState::Running && self.bios.state == BIOSState::Ok
 	}
 
-    pub fn resume(&mut self)
+    pub fn resume(&mut self, trace: bool)
     {
         self.cpu.state = CPUState::Running;
+        self.trace = trace
     }
 }
