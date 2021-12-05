@@ -169,4 +169,9 @@ impl Machine
         self.cpu.state = CPUState::Running;
         self.trace = trace
     }
+
+    pub fn pause(&mut self)
+    {
+        self.cpu.state = CPUState::Paused;
+    }
 }

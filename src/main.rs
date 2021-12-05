@@ -113,13 +113,44 @@ impl Command for ContinueCommand
     }
 }
 
-struct TraceCommand { }
+struct StepCommand { }
 
-impl Command for TraceCommand
+impl Command for StepCommand
+{
+    fn execute(&self, m: &mut machine::Machine)
+    {
+        m.resume(false);
+        m.step();
+        m.dump();
+        m.pause();
+    }
+}
+
+struct InsertBreakpointCommand
+{
+    seg: u16,
+    addr: u16
+}
+
+impl Command for InsertBreakpointCommand
 {
     fn execute(&self, m: &mut machine::Machine)
     {
         println!("not yet implemented");
+    }
+}
+
+struct DisassembleCommand
+{
+    seg: u16,
+    addr: u16
+}
+
+impl Command for DisassembleCommand
+{
+    fn execute(&self, m: &mut machine::Machine)
+    {
+        m.disas(self.seg, self.addr, 5);
     }
 }
 
@@ -167,7 +198,7 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
             Some("q") => { 
                 cmd = Box::new(QuitCommand{ });
             }
-            Some("d") => {
+            Some("b") | Some("d") | Some("u") => {
 				let args = (words.next(), words.next());
 				match args
 				{
@@ -176,13 +207,30 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
 						let seg = u32_from_hex_str(seg_str) as u16;
 						let addr = u32_from_hex_str(addr_str) as u16;
 
-                        cmd = Box::new(DumpCommand{
-                            seg,
-                            addr
-                        });
+                        match word0 {
+                            Some("b") => {
+                                cmd = Box::new(InsertBreakpointCommand{
+                                    seg,
+                                    addr
+                                });
+                            }
+                            Some("d") => {
+                                cmd = Box::new(DumpCommand{
+                                    seg,
+                                    addr
+                                });
+                            }
+                            Some("u") => {
+                                cmd = Box::new(DisassembleCommand{
+                                    seg,
+                                    addr
+                                });
+                            }
+                            _ => panic!("Impossible command!"),
+                        }
 					},
 					_ => {
-                        debug_print!("Usage: d [segment] [address]");
+                        debug_print!("Usage: <CMD> [segment] [address]");
                         continue
                     }
                 }
@@ -192,6 +240,9 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
                 cmd = Box::new(ContinueCommand{
                     trace
                 });
+            }
+            None => {
+                cmd = Box::new(StepCommand{ });
             }
             _ => {
                 println!("Bad command.");
