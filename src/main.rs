@@ -191,7 +191,9 @@ impl Command for WriteMemoryCommand
     }
 }
 
-fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
+struct CommandResult { }
+
+fn console_thread(tx: SyncSender<Box<dyn Command + Send>>, rx: Receiver<CommandResult>)
 {
     loop {
         print!("debug> ");
@@ -276,6 +278,8 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
         }
 
         tx.send(cmd);
+
+        rx.recv();
     }
 }
 
@@ -313,10 +317,11 @@ fn main()
 
     // channel to communicate console commands to the emulator loop
     let (tx, rx): (SyncSender<Box<dyn Command + Send>>, Receiver<Box<dyn Command + Send>>) = mpsc::sync_channel(1);
+    let (tx_finished, rx_finished): (SyncSender<CommandResult>, Receiver<CommandResult>) = mpsc::sync_channel(1);
 
     // console thread
     let console_thread_handle = thread::spawn(move || {
-        console_thread(tx);
+        console_thread(tx, rx_finished);
     });
 
     let mut bpm = BreakpointManager {
@@ -329,6 +334,7 @@ fn main()
         match rx.try_recv() {
             Ok(cmd) => {
                 (*cmd).execute(&mut m, &mut bpm);
+                tx_finished.send(CommandResult{ });
             }
             Err(_) => {
                 m.step();
