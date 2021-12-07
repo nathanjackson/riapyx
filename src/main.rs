@@ -71,16 +71,38 @@ fn u32_from_hex_str(s: &str) -> u32
 	res
 }
 
+struct BreakpointManager
+{
+    next: i32,
+    addr_bkpt: HashMap<(u16, u16), i32>,
+}
+
+impl BreakpointManager
+{
+    fn add_breakpoint(&mut self, seg: u16, addr: u16) -> i32
+    {
+        let bkpt = self.next;
+        self.addr_bkpt.insert((seg, addr), bkpt);
+        self.next += 1;
+        bkpt
+    }
+
+    fn get_breakpoint(&self, seg: u16, addr: u16) -> Option<&i32>
+    {
+        self.addr_bkpt.get(&(seg, addr))
+    }
+}
+
 trait Command
 {
-    fn execute(&self, m: &mut machine::Machine);
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager);
 }
 
 struct QuitCommand { }
 
 impl Command for QuitCommand
 {
-    fn execute(&self, m: &mut machine::Machine)
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
         std::process::exit(0);
     }
@@ -94,7 +116,7 @@ struct DumpCommand
 
 impl Command for DumpCommand
 {
-    fn execute(&self, m: &mut machine::Machine)
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
         m.print_memory(self.seg, self.addr, 16);
     }
@@ -107,7 +129,7 @@ struct ContinueCommand
 
 impl Command for ContinueCommand
 {
-    fn execute(&self, m: &mut machine::Machine)
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
         m.resume(self.trace);
     }
@@ -117,12 +139,14 @@ struct StepCommand { }
 
 impl Command for StepCommand
 {
-    fn execute(&self, m: &mut machine::Machine)
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
-        m.resume(false);
-        m.step();
-        m.dump();
-        m.pause();
+        if !m.is_running() {
+            m.resume(true);
+            m.step();
+            m.dump();
+            m.pause();
+        }
     }
 }
 
@@ -134,9 +158,9 @@ struct InsertBreakpointCommand
 
 impl Command for InsertBreakpointCommand
 {
-    fn execute(&self, m: &mut machine::Machine)
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
-        println!("not yet implemented");
+        bpm.add_breakpoint(self.seg, self.addr);
     }
 }
 
@@ -148,38 +172,24 @@ struct DisassembleCommand
 
 impl Command for DisassembleCommand
 {
-    fn execute(&self, m: &mut machine::Machine)
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
         m.disas(self.seg, self.addr, 5);
     }
 }
 
-//type Command = Box<impl Fn() + Send>;
+struct WriteMemoryCommand
+{
+    filename: String,    
+}
 
-//fn do_quit_cmd()
-//{
-//    std::process::exit(0);
-//}
-
-//fn do_disas_cmd(seg: u16, addr: u16)
-//{
-    //m.print_memory(seg, addr, 16);
-
-				/*let args = (words.next(), words.next());
-				match args
-				{
-					(Some(seg_str), Some(addr_str)) =>
-					{
-						let seg = u32_from_hex_str(seg_str) as u16;
-						let addr = u32_from_hex_str(addr_str) as u16;
-
-						m.print_memory(seg, addr, 16);
-					},
-					_ => debug_print!("Usage: d [segment] [address]")
-				}
-			}*/
-//}
-
+impl Command for WriteMemoryCommand
+{
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
+    {
+        m.dump_memory_to_file(&self.filename);
+    }
+}
 
 fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
 {
@@ -241,6 +251,21 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>)
                     trace
                 });
             }
+			Some("w") =>
+			{
+				let arg = words.next();
+				match arg
+				{
+					Some(fname) => {
+                        cmd = Box::new(WriteMemoryCommand{
+                            filename: fname.to_string()
+                        });
+					},
+					_ => {
+                        debug_print!("Usage: w [filename]");
+                        continue
+                    }				}
+			}
             None => {
                 cmd = Box::new(StepCommand{ });
             }
@@ -294,155 +319,33 @@ fn main()
         console_thread(tx);
     });
 
+    let mut bpm = BreakpointManager {
+        next: 0,
+        addr_bkpt: HashMap::new()
+    };
+
     // main emulator loop
     loop {
         match rx.try_recv() {
             Ok(cmd) => {
-                (*cmd).execute(&mut m);
+                (*cmd).execute(&mut m, &mut bpm);
             }
             Err(_) => {
                 m.step();
+
+                if m.is_running() {
+                    let (cs, ip) = m.get_pc();
+                    match bpm.get_breakpoint(cs, ip) {
+                        Some(bkpt) => {
+                            debug_print!("Hit breakpoint #{} at {:04x}:{:04x}", bkpt, cs, ip);
+                            m.pause();
+                        }
+                        _ => { }
+                    }
+                }
             }
         }
     }
 
     console_thread_handle.join().unwrap();
-
-	/*let mut bkpt_addr: HashMap<i32, (u16, u16)> = HashMap::new();
-	let mut addr_bkpt: HashMap<(u16, u16), i32> = HashMap::new();
-	let mut next_bkpt_idx = 0;
-
-	loop
-	{
-		print!("debug> ");
-		io::stdout().flush().unwrap();
-		let mut cmd = String::new();
-		io::stdin().read_line(&mut cmd).unwrap();
-
-        m.hw.sdl.event().unwrap().flush_events(0x0, 0xffffffff);
-
-		let mut words = cmd.split_whitespace();
-
-		let cmd = words.next();
-		match cmd
-		{
-			Some("d") => 
-			{
-				let args = (words.next(), words.next());
-				match args
-				{
-					(Some(seg_str), Some(addr_str)) =>
-					{
-						let seg = u32_from_hex_str(seg_str) as u16;
-						let addr = u32_from_hex_str(addr_str) as u16;
-
-						m.print_memory(seg, addr, 16);
-					},
-					_ => debug_print!("Usage: d [segment] [address]")
-				}
-			},
-			Some("u") => 
-			{
-				let args = (words.next(), words.next());
-				match args
-				{
-					(Some(cs_str), Some(ip_str)) =>
-					{
-						let cs = u32_from_hex_str(cs_str) as u16;
-						let ip = u32_from_hex_str(ip_str) as u16;
-
-						m.disas(cs, ip, 5);
-					},
-					_ => debug_print!("Usage: u [segment] [address]")
-				}
-			},
-			Some("b") =>
-			{
-				let args = (words.next(), words.next());
-				match args
-				{
-					(Some(cs_str), Some(ip_str)) =>
-					{
-						let cs = u32_from_hex_str(cs_str) as u16;
-						let ip = u32_from_hex_str(ip_str) as u16;
-
-						bkpt_addr.insert(next_bkpt_idx, (cs, ip));
-						addr_bkpt.insert((cs, ip), next_bkpt_idx);
-						debug_print!("Breakpoint {} set at {:04x}:{:04x}", next_bkpt_idx, cs, ip);
-						next_bkpt_idx += 1;
-					},
-					_ => debug_print!("Usage: b [segment] [address]")
-				}
-			}
-			Some("w") =>
-			{
-				let arg = words.next();
-				match arg
-				{
-					Some(fname) =>
-					{
-						m.dump_memory_to_file(fname);
-					},
-					_ => debug_print!("Usage: w [filename]")
-				}
-			}
-			Some("ws") =>
-			{
-				let args = (words.next(), words.next());
-				match args
-				{
-					(Some(seg), Some(fname)) =>
-					{
-						m.dump_segment_to_file(u32_from_hex_str(seg), fname);
-					},
-					_ => debug_print!("Usage: ws [seg] [filename]")
-				}
-			}
-			Some("c") | Some("t") =>
-			{
-				loop
-				{
-					m.step();
-
-					if cmd == Some("t")
-					{
-						m.dump_trace();
-					}
-
-					if addr_bkpt.contains_key(&m.get_pc())
-					{
-						let (cs, ip) = m.get_pc();
-						let idx = addr_bkpt.get(&(cs, ip)).expect("Broke with no breakpoint?");
-						debug_print!("Hit breakpoint #{} at {:04x}:{:04x}", idx, cs, ip);
-						break;
-					}
-					if ! m.is_running()
-					{
-						debug_print!("Machine halted");
-						break;
-					}
-				}
-
-				m.dump();				
-			}
-			Some("f") =>
-			{
-				while m.is_running()
-				{
-					m.step();
-				}
-				m.dump();
-			}
-			Some("q") => std::process::exit(0),
-			Some(s) =>
-			{
-				debug_print!("Unknown command: {}", s)
-			}
-			None =>
-			{
-				m.step();
-				m.dump();
-			}
-		}
-	}*/
 }

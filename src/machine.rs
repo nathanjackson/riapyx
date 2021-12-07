@@ -107,7 +107,7 @@ impl Machine
 		print!("\n");
 	}
 
-	pub fn dump_memory_to_file(&self, fname: &str)
+	pub fn dump_memory_to_file(&self, fname: &String)
 	{
 		let mut file = File::create(fname).unwrap();
 		const MEM_SIZE: usize = 1024 * 1024;
