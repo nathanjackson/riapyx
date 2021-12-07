@@ -163,6 +163,21 @@ pub fn decode_with_iced(bytecode: &[u8]) -> SizedInstruction
 	let opcode = instr.code();
 
 	match opcode {
+		iced_x86::Code::Aad_imm8 => {
+			let op_kind = instr.op0_kind();
+			match op_kind {
+				iced_x86::OpKind::Immediate8 => {
+					let imm = instr.immediate8();
+
+					SizedInstruction {
+						instruction: Instruction::SingleBOperand(SingleOperandOpCode::AAD, BOperand::Immediate(imm)),
+						size: instr.len() as u16
+					}
+				},
+				_ => panic!("Unexpected operand type.")
+			}
+		}
+
 		iced_x86::Code::Aam_imm8 => {
 			let op_kind = instr.op0_kind();
 			match op_kind {

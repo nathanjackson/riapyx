@@ -727,6 +727,23 @@ impl CPU
                     _ => panic!("Unexpected Operand Type.")
                 }
             }
+            SingleOperandOpCode::AAD => {
+                let tmp_al = self.get_reg(BReg::AL);
+                let tmp_ah = self.get_reg(BReg::AH);
+                match oper {
+                    BOperand::Immediate(imm8) => {
+                        let new_al = (tmp_al + (tmp_ah * imm8)) & 0xFF;
+                        let new_ah = 0;
+                        self.set_reg(BReg::AH, new_ah);
+                        self.set_reg(BReg::AL, new_al);
+                        self.set_flag_value(FLAG_S, new_al.sign_flag());
+                        self.set_flag_value(FLAG_Z, new_al.zero_flag());
+                        self.set_flag_value(FLAG_P, new_al.parity_flag());
+                    }
+                    _ => panic!("Unexpected Operand Type.")
+                }
+            }
+
             _ => self.run_sgop_ins(mem, op, &oper)
         }
 	}

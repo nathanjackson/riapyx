@@ -164,6 +164,11 @@ impl Machine
 		self.cpu.state == CPUState::Running && self.bios.state == BIOSState::Ok
 	}
 
+    pub fn crashed(&self) -> bool
+    {
+        self.cpu.state == CPUState::Crashed
+    }
+
     pub fn resume(&mut self, trace: bool)
     {
         self.cpu.state = CPUState::Running;

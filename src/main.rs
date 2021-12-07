@@ -339,6 +339,11 @@ fn main()
             Err(_) => {
                 m.step();
 
+                if m.crashed() {
+                    debug_print!("Machine halted.");
+                    m.pause();
+                }
+
                 if m.is_running() {
                     let (cs, ip) = m.get_pc();
                     match bpm.get_breakpoint(cs, ip) {

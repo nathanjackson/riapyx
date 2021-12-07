@@ -116,7 +116,8 @@ pub enum SingleOperandOpCode
 	DIV,
 	IDIV,
 	NOT,
-	AAM
+	AAM,
+    AAD
 }
 
 #[derive(Debug, Eq, PartialEq)]
