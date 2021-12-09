@@ -205,7 +205,8 @@ pub fn decode_with_iced(bytecode: &[u8]) -> SizedInstruction
             match op_kind {
                 iced_x86::OpKind::Memory => {
                     SizedInstruction {
-                        instruction: Instruction::SingleWOperand(SingleOperandOpCode::FNSTCW, WOperand::Indirect8iDis(instr.memory_displacement64() as i8)),
+                        instruction: Instruction::SingleFCOperand(SingleOperandFCOpCode::FNSTCW, FlowControlOperand::DirectSeg(instr.memory_displacement64() as u16)),
+                        //instruction: Instruction::SingleWOperand(SingleOperandOpCode::FNSTCW, WOperand::Indirect8iDis(instr.memory_displacement64() as i8)),
                         size: instr.len() as u16
                     }
                 }

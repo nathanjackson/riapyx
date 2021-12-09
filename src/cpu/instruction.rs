@@ -118,8 +118,7 @@ pub enum SingleOperandOpCode
 	IDIV,
 	NOT,
 	AAM,
-    AAD,
-    FNSTCW
+    AAD
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -145,7 +144,8 @@ pub enum TwoOperandsOpCode
 pub enum SingleOperandFCOpCode
 {
 	CALL,
-	JMP
+	JMP,
+    FNSTCW
 }
 
 #[derive(Debug, Eq, PartialEq)]

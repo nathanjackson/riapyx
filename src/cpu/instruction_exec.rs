@@ -901,6 +901,9 @@ impl CPU
 						write!(log, "{:04x} -> {:04x}: {:04x} jumps to {:04x}\n", self.cs, cs, self.ip, ip).unwrap();
 					}
 				}
+
+                self.cs = cs;
+                self.ip = ip;
 			}
 			SingleOperandFCOpCode::CALL =>
 			{
@@ -919,11 +922,18 @@ impl CPU
 					self.stack_push(mem, old_cs);
 				}
 				self.stack_push(mem, old_ip);
-			}
-		}
 
-		self.cs = cs;
-		self.ip = ip;
+        		self.cs = cs;
+        		self.ip = ip;
+			}
+            SingleOperandFCOpCode::FNSTCW => {
+                if 0 < (self.get_cr0() & 0x4) {
+                    self.request_interrupt(mem, 0x02);
+                } else {
+                    panic!("FPU not implemented");
+                }
+            }
+		}
 	}
 
 	pub fn run_fcnoop_seg_ins(&mut self, mem: &Memory, op: NoOpFCOpCode)
