@@ -154,4 +154,14 @@ impl CPU
 	{
 		self.flags = self.flags & not(flag_mask);
 	}
+
+    pub fn get_cr0(&self) -> u8
+    {
+        self.cr0
+    }
+
+    pub fn set_cr0(&mut self, new_cr0: u8)
+    {
+        self.cr0 = new_cr0
+    }
 }

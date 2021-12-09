@@ -192,6 +192,27 @@ pub fn decode_with_iced(bytecode: &[u8]) -> SizedInstruction
 				_ => panic!("Unexpected operand type.")
 			}
 		},
+
+        iced_x86::Code::Fninit => {
+            SizedInstruction {
+                instruction: Instruction::NoOperand(NoOperandOpCode::FNINIT),
+                size: instr.len() as u16
+            }
+        },
+        iced_x86::Code::Fnstcw_m2byte => {
+            let op_kind = instr.op0_kind();
+
+            match op_kind {
+                iced_x86::OpKind::Memory => {
+                    SizedInstruction {
+                        instruction: Instruction::SingleWOperand(SingleOperandOpCode::FNSTCW, WOperand::Indirect8iDis(instr.memory_displacement64() as i8)),
+                        size: instr.len() as u16
+                    }
+                }
+                _ => panic!("Unexpected operand type: {:?}", op_kind)
+            }
+        }
+
 		_ => invalid_instruction()
 	}
 }

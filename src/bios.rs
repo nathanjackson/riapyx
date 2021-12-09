@@ -115,6 +115,9 @@ impl BIOS
 				bios_print!("Unhandled CPU exception");
 				self.state = BIOSState::Crashed;
 			}
+            0x2 => {
+                bios_print!("Non-Maskable Interrupt");
+            }
 			0x8 =>
 			{}
 			0x9 =>

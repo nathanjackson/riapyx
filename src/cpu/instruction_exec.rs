@@ -126,6 +126,13 @@ impl CPU
 			}
 			NoOperandOpCode::HLT => cpu_print!("HLT"),
 			//NoOperandOpCode::WAIT => cpu_print!("WAIT?"),
+            NoOperandOpCode::FNINIT => {
+                if 0 < (self.get_cr0() & 0x4) {
+                    self.request_interrupt(mem, 0x02);
+                } else {
+                    panic!("FPU not implemented");
+                }
+            }
 			_ => panic!("Unhandled no-operand opcode: {:?} ({:04x}:{:04x})", op, self.cs, self.ip)
 		}
 	}

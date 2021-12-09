@@ -70,13 +70,15 @@ pub struct CPU
 	pub ip: u16,
 	pub flags: u16,
 
+    pub cr0: u8,
+
 	pub segment_override_prefix: Option<SegReg>,
 	pub rep_prefix: Option<RepPrefix>,
 	pub state: CPUState,
 
 	pub pending_interrupts: VecDeque<u8>,
 
-	pub log: Option<File>
+	pub log: Option<File>,
 }
 
 impl CPU
@@ -105,6 +107,7 @@ impl CPU
 			ss: 0xbad0,
 			es: 0xbad0,
 			flags: FLAG_SET_8086,
+            cr0: 0x4,
 			segment_override_prefix: None,
 			rep_prefix: None,
 			state: CPUState::Paused,
