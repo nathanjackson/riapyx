@@ -39,7 +39,7 @@ impl CPU
 			self.request_interrupt(mem, irq);
 		}
 
-		if self.cs == CS_BIOS_TRAP
+		if (self.cs == CS_BIOS_TRAP1) || (self.cs == CS_BIOS_TRAP2)
 		{
 			bios.cpu_trap(self, mem, hw);
 			/* IP should point to an 'IRET' instruction or to a far call, 

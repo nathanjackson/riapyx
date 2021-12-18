@@ -13,7 +13,8 @@ pub const FLAG_I: u16 = 0b0000001000000000;
 pub const FLAG_D: u16 = 0b0000010000000000;
 pub const FLAG_O: u16 = 0b0000100000000000;
 pub const FLAG_SET_8086: u16 = 0b1111000000000000;
-pub const CS_BIOS_TRAP: u16 = 0xf000;
+pub const CS_BIOS_TRAP1: u16 = 0xf000;
+pub const CS_BIOS_TRAP2: u16 = 0xffff;
 
 pub enum ImplicitBOperand
 {

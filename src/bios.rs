@@ -94,15 +94,18 @@ impl BIOS
 
 	pub fn cpu_trap(&mut self, cpu: &mut CPU, mem: &mut Memory, hw: &mut HW)
 	{
+        let cs = cpu.get_reg(SegReg::CS);
 		let ip = cpu.get_reg(WReg::IP);
-		/* IP = 0xFFF0 for boot, interrupt number otherwise */
 
-		match ip
-		{
-			0xfff0 => self.boot(cpu, mem, hw),
-			0x0 ... 0xff => self.handle_interrupt(cpu, mem, hw, ip as u8),
-			_ => panic!("Invalid IP value for BIOS call: {}", ip)
-		}
+        /* reset vector: ffff:0000 or f000:fff0 */
+        if ((0xffff == cs) && (0x0000 == ip)) || ((0xf000 == cs) && (0xfff0 == ip)) {
+            self.boot(cpu, mem, hw)
+        } else {
+		    match ip {
+			    0x0 ... 0xff => self.handle_interrupt(cpu, mem, hw, ip as u8),
+			    _ => panic!("Invalid IP value for BIOS call: {}", ip)
+		    }
+        }
 	}
 
 	fn handle_interrupt(&mut self, cpu: &mut CPU, mem: &mut Memory, hw: &mut HW, interrupt_number: u8)
