@@ -99,7 +99,9 @@ impl BIOS
 
         /* reset vector: ffff:0000 or f000:fff0 */
         if ((0xffff == cs) && (0x0000 == ip)) || ((0xf000 == cs) && (0xfff0 == ip)) {
-            self.boot(cpu, mem, hw)
+            mem.clear_vram();
+            hw.display.tty_setcoords(mem, 0, 0, 0);
+            self.boot(cpu, mem, hw);
         } else {
 		    match ip {
 			    0x0 ... 0xff => self.handle_interrupt(cpu, mem, hw, ip as u8),

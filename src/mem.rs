@@ -104,4 +104,11 @@ impl Memory
 	{
 		self.dirty
 	}
+
+    pub fn clear_vram(&mut self)
+    {
+        for i in 0xa0000..0xbffff {
+            self.write_u8(i, 0x0)
+        }
+    }
 }
