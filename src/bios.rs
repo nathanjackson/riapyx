@@ -395,6 +395,11 @@ impl BIOS
 							self.clear_carry(cpu, mem);
 							cpu.set_reg(BReg::AH, 0);
 						}
+                        0x18 => {
+                            /* Set media type for Format */
+                            bios_print!("Set Media Type for Format - Not Available.");
+                            cpu.set_reg(BReg::AH, 0x1);
+                        }
 						_ => panic!("Unhandled disk service (int 0x13): {:x}", ah)
 					}
 				}				
