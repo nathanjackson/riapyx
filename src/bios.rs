@@ -340,6 +340,12 @@ impl BIOS
 							cpu.set_reg(BReg::AL, written);
 							self.set_carry_value(cpu, mem, status != storage::Status::Success);
 						}
+                        0x4 => {
+                            /* verify sectors - don't do anything, just return OK */
+                            bios_print!("Verify Sectors");
+                            self.clear_carry(cpu, mem);
+                            cpu.set_reg(BReg::AH, 0x0);
+                        }
 						0x8 =>
 						{
 							/* Get drive parameters */
