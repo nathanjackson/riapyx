@@ -20,7 +20,7 @@ pub struct Machine
 	cpu: CPU,
 	bios: BIOS,
 	memory: Memory,
-	hw: HW,
+	pub hw: HW,
 
 	clock: u32,
 	last_time_ns: u64, // Only updated every 1k cycles

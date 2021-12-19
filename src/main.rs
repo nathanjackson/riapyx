@@ -17,6 +17,7 @@ use std::{thread, time};
 use std::sync::mpsc;
 use std::sync::mpsc::{SyncSender, Receiver};
 use bios::BootDrive;
+use hw::storage;
 
 extern crate rustc_serialize;
 extern crate docopt;
@@ -191,6 +192,20 @@ impl Command for WriteMemoryCommand
     }
 }
 
+struct ChangeFloppyCommand
+{
+    filename: String,
+}
+
+impl Command for ChangeFloppyCommand
+{
+    fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
+    {
+        m.hw.floppy = Some(storage::Storage::new_floppy(&self.filename));
+        //println!("Not yet implemented.");
+    }
+}
+
 struct CommandResult { }
 
 fn console_thread(tx: SyncSender<Box<dyn Command + Send>>, rx: Receiver<CommandResult>)
@@ -268,6 +283,20 @@ fn console_thread(tx: SyncSender<Box<dyn Command + Send>>, rx: Receiver<CommandR
                         continue
                     }				}
 			}
+            Some("change-floppy") => {
+				let arg = words.next();
+				match arg {
+					Some(fname) => {
+                        cmd = Box::new(ChangeFloppyCommand{
+                            filename: fname.to_string()
+                        });
+					},
+					_ => {
+                        debug_print!("Usage: change-floppy FILENAME");
+                        continue
+                    }
+                }
+            }
             None => {
                 cmd = Box::new(StepCommand{ });
             }
