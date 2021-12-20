@@ -15,7 +15,7 @@ impl CPU
 			IndReg::BXSI => (self.ds, self.bx.wrapping_add(self.si)),
 			IndReg::BXDI => (self.ds, self.bx.wrapping_add(self.di)),
 			IndReg::BPSI => (self.ss, self.bp.wrapping_add(self.si)),
-			IndReg::BPDI => (self.ss, self.bp + self.di)
+			IndReg::BPDI => (self.ss, self.bp.wrapping_add(self.di))
 		}
 	}
 
