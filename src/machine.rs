@@ -20,11 +20,13 @@ pub struct Machine
 	cpu: CPU,
 	bios: BIOS,
 	memory: Memory,
-	hw: HW,
+	pub hw: HW,
 
 	clock: u32,
 	last_time_ns: u64, // Only updated every 1k cycles
-	last_mcycle_ns: u64
+	last_mcycle_ns: u64,
+
+    trace: bool
 }
 
 impl Machine
@@ -39,7 +41,8 @@ impl Machine
 			hw: HW::new(floppy_filename, hdd_filename),
 			clock: 0,
 			last_time_ns: time::precise_time_ns(),
-			last_mcycle_ns: time::precise_time_ns()
+			last_mcycle_ns: time::precise_time_ns(),
+            trace: false
 		}
 	}
 
@@ -50,6 +53,11 @@ impl Machine
 
 	pub fn step(&mut self)
 	{
+        if !self.is_running() {
+            self.hw.try_pump_event(&mut self.cpu);
+            return;
+        }
+
 		self.clock += 1;
 
 		if self.clock % 1000 == 0
@@ -59,6 +67,10 @@ impl Machine
 
 		self.cpu.step(&mut self.memory, &mut self.hw, &mut self.bios);
 		self.hw.step(&mut self.cpu, &mut self.memory, self.clock, self.last_time_ns);
+
+        if self.trace {
+            self.dump_trace();
+        }
 
 		if self.clock % 10000000 == 0
 		{
@@ -78,7 +90,7 @@ impl Machine
 	{
 		self.cpu.dump();
 		let (cs, ip) = self.get_pc();
-		self.disas(cs, ip, 3);
+		self.disas(cs, ip, 1);
 	}
 
 	pub fn print_memory(&self, seg: u16, addr: u16, size: u32)
@@ -95,7 +107,7 @@ impl Machine
 		print!("\n");
 	}
 
-	pub fn dump_memory_to_file(&self, fname: &str)
+	pub fn dump_memory_to_file(&self, fname: &String)
 	{
 		let mut file = File::create(fname).unwrap();
 		const MEM_SIZE: usize = 1024 * 1024;
@@ -151,4 +163,20 @@ impl Machine
 	{
 		self.cpu.state == CPUState::Running && self.bios.state == BIOSState::Ok
 	}
+
+    pub fn crashed(&self) -> bool
+    {
+        self.cpu.state == CPUState::Crashed
+    }
+
+    pub fn resume(&mut self, trace: bool)
+    {
+        self.cpu.state = CPUState::Running;
+        self.trace = trace
+    }
+
+    pub fn pause(&mut self)
+    {
+        self.cpu.state = CPUState::Paused;
+    }
 }

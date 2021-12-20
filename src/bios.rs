@@ -94,15 +94,20 @@ impl BIOS
 
 	pub fn cpu_trap(&mut self, cpu: &mut CPU, mem: &mut Memory, hw: &mut HW)
 	{
+        let cs = cpu.get_reg(SegReg::CS);
 		let ip = cpu.get_reg(WReg::IP);
-		/* IP = 0xFFF0 for boot, interrupt number otherwise */
 
-		match ip
-		{
-			0xfff0 => self.boot(cpu, mem, hw),
-			0x0 ... 0xff => self.handle_interrupt(cpu, mem, hw, ip as u8),
-			_ => panic!("Invalid IP value for BIOS call: {}", ip)
-		}
+        /* reset vector: ffff:0000 or f000:fff0 */
+        if ((0xffff == cs) && (0x0000 == ip)) || ((0xf000 == cs) && (0xfff0 == ip)) {
+            mem.clear_vram();
+            hw.display.tty_setcoords(mem, 0, 0, 0);
+            self.boot(cpu, mem, hw);
+        } else {
+		    match ip {
+			    0x0 ... 0xff => self.handle_interrupt(cpu, mem, hw, ip as u8),
+			    _ => panic!("Invalid IP value for BIOS call: {}", ip)
+		    }
+        }
 	}
 
 	fn handle_interrupt(&mut self, cpu: &mut CPU, mem: &mut Memory, hw: &mut HW, interrupt_number: u8)
@@ -115,6 +120,9 @@ impl BIOS
 				bios_print!("Unhandled CPU exception");
 				self.state = BIOSState::Crashed;
 			}
+            0x2 => {
+                bios_print!("Non-Maskable Interrupt");
+            }
 			0x8 =>
 			{}
 			0x9 =>
@@ -291,9 +299,15 @@ impl BIOS
 					{
 						0x0 => 
 						{
-							let status = storage.reset(mem);
-							cpu.set_reg(BReg::AH, status.get_bios_code());
-							self.set_carry_value(cpu, mem, status != storage::Status::Success);
+							// I think we can simply return OK for reset disk
+							// system.
+							cpu.set_reg(BReg::AH, 0);
+							self.set_carry_value(cpu, mem, false);
+						}
+						0x1 =>
+						{
+							bios_print!("Disk Status not implemented, returning no error.");
+							cpu.set_reg(BReg::AL, 0);
 						}
 						0x2 =>
 						{
@@ -326,6 +340,12 @@ impl BIOS
 							cpu.set_reg(BReg::AL, written);
 							self.set_carry_value(cpu, mem, status != storage::Status::Success);
 						}
+                        0x4 => {
+                            /* verify sectors - don't do anything, just return OK */
+                            bios_print!("Verify Sectors");
+                            self.clear_carry(cpu, mem);
+                            cpu.set_reg(BReg::AH, 0x0);
+                        }
 						0x8 =>
 						{
 							/* Get drive parameters */
@@ -381,6 +401,11 @@ impl BIOS
 							self.clear_carry(cpu, mem);
 							cpu.set_reg(BReg::AH, 0);
 						}
+                        0x18 => {
+                            /* Set media type for Format */
+                            bios_print!("Set Media Type for Format - Not Available.");
+                            cpu.set_reg(BReg::AH, 0x1);
+                        }
 						_ => panic!("Unhandled disk service (int 0x13): {:x}", ah)
 					}
 				}				

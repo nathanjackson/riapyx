@@ -21,12 +21,12 @@ Emulated hardware
 
 What can run, what cannot
 -------------------------
-This emulator is only able to run MS-DOS 6.22 (and should be able to should run MS-DOS 5.0 too). Windows 3.0 can run in real mode and most pre-installed applications seem to work.
-Some DOS apps also seem to work properly (most command-line tools, DEBUG, EDIT, QBASIC, DEFRAG, HELP). Some don't (SCANDISK).
 
-On the other hand, it can boot neither ELKS nor FreeDOS as of now. 
+The emulator supports the following operating systems:
 
-As floppy-switching is not supported and as this was never tested, it is unlikely that you will be able install a proper OS with this emulator. As a consequence, **pre-installed hard-drive images should be used**. For Windows 3.0, ensure that you have configured your system to use a Microsoft serial mouse, a CGA adapter and an XT keyboard.
+ - MS-DOS 3.30
+ - MS-DOS 6.22 - pre-installed disk images only
+ - Windows 3.0 - pre-installed disk images only
 
 Building
 --------
@@ -79,6 +79,7 @@ The following commands are available in the debugger:
  - u [SEG] [ADDR]: disassemble 5 instructions at SEG:ADDR
  - q: Quit
  - f: continue and ignore breakpoints; faster than 'c'
+ - change-floppy FILENAME: change the floppy disk image
 
 Implementation details
 ----------------------

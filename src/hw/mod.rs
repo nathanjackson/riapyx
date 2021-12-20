@@ -92,6 +92,12 @@ impl HW
 		HW::pump_events(&self.sdl, &mut self.keyboard, &mut self.com1.device, cpu, &mut event_it, true);
 	}
 
+    pub fn try_pump_event(&mut self, cpu: &mut CPU)
+	{
+		let mut event_it = self.event_pump.poll_iter();
+		HW::pump_events(&self.sdl, &mut self.keyboard, &mut self.com1.device, cpu, &mut event_it, true);
+	}
+
 	pub fn step(&mut self, cpu: &mut CPU, mem: &mut Memory, clock: u32, time_ns: u64)
 	{
 		self.display.render(&self.event_pump, mem, clock, time_ns);

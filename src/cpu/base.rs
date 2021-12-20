@@ -13,7 +13,8 @@ pub const FLAG_I: u16 = 0b0000001000000000;
 pub const FLAG_D: u16 = 0b0000010000000000;
 pub const FLAG_O: u16 = 0b0000100000000000;
 pub const FLAG_SET_8086: u16 = 0b1111000000000000;
-pub const CS_BIOS_TRAP: u16 = 0xf000;
+pub const CS_BIOS_TRAP1: u16 = 0xf000;
+pub const CS_BIOS_TRAP2: u16 = 0xffff;
 
 pub enum ImplicitBOperand
 {
@@ -49,6 +50,7 @@ pub enum RepPrefix
 pub enum CPUState
 {
 	Running,
+    Paused,
 	Crashed
 }
 
@@ -69,13 +71,15 @@ pub struct CPU
 	pub ip: u16,
 	pub flags: u16,
 
+    pub cr0: u8,
+
 	pub segment_override_prefix: Option<SegReg>,
 	pub rep_prefix: Option<RepPrefix>,
 	pub state: CPUState,
 
 	pub pending_interrupts: VecDeque<u8>,
 
-	pub log: Option<File>
+	pub log: Option<File>,
 }
 
 impl CPU
@@ -104,9 +108,10 @@ impl CPU
 			ss: 0xbad0,
 			es: 0xbad0,
 			flags: FLAG_SET_8086,
+            cr0: 0x4,
 			segment_override_prefix: None,
 			rep_prefix: None,
-			state: CPUState::Running,
+			state: CPUState::Paused,
 			pending_interrupts: VecDeque::<u8>::new(),
 			log: trace_file
 		}

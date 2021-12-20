@@ -11,14 +11,14 @@ impl CPU
 {
 	fn stack_push(&mut self, mem: &mut Memory, val: u16)
 	{
-		self.sp -= 2;
+		self.sp = self.sp.wrapping_sub(2);
 		self.store_memory_u16_noov(mem, self.ss, self.sp, val);
 	}
 
 	fn stack_pop(&mut self, mem: &Memory) -> u16
 	{
 		let value = self.load_memory_u16_noov(mem, self.ss, self.sp);
-		self.sp += 2;
+		self.sp = self.sp.wrapping_add(2);
 		value
 	}
 
@@ -126,6 +126,13 @@ impl CPU
 			}
 			NoOperandOpCode::HLT => cpu_print!("HLT"),
 			//NoOperandOpCode::WAIT => cpu_print!("WAIT?"),
+            NoOperandOpCode::FNINIT => {
+                if 0 < (self.get_cr0() & 0x4) {
+                    self.request_interrupt(mem, 0x02);
+                } else {
+                    panic!("FPU not implemented");
+                }
+            }
 			_ => panic!("Unhandled no-operand opcode: {:?} ({:04x}:{:04x})", op, self.cs, self.ip)
 		}
 	}
@@ -711,7 +718,41 @@ impl CPU
 
 	pub fn run_sbop_ins(&mut self, mem: &mut Memory, op: SingleOperandOpCode, oper: BOperand)
 	{
-		self.run_sgop_ins(mem, op, &oper)
+        match op {
+            SingleOperandOpCode::AAM => {
+                let tmp = self.get_reg(BReg::AL);
+                match oper {
+                    BOperand::Immediate(imm8) => {
+                        let quot = tmp / imm8;
+                        let rem = tmp % imm8;
+                        self.set_reg(BReg::AH, quot);
+                        self.set_reg(BReg::AL, rem);
+                        self.set_flag_value(FLAG_S, rem.sign_flag());
+                        self.set_flag_value(FLAG_Z, rem.zero_flag());
+                        self.set_flag_value(FLAG_P, rem.parity_flag());
+                    }
+                    _ => panic!("Unexpected Operand Type.")
+                }
+            }
+            SingleOperandOpCode::AAD => {
+                let tmp_al = self.get_reg(BReg::AL);
+                let tmp_ah = self.get_reg(BReg::AH);
+                match oper {
+                    BOperand::Immediate(imm8) => {
+                        let new_al = (tmp_al + (tmp_ah * imm8)) & 0xFF;
+                        let new_ah = 0;
+                        self.set_reg(BReg::AH, new_ah);
+                        self.set_reg(BReg::AL, new_al);
+                        self.set_flag_value(FLAG_S, new_al.sign_flag());
+                        self.set_flag_value(FLAG_Z, new_al.zero_flag());
+                        self.set_flag_value(FLAG_P, new_al.parity_flag());
+                    }
+                    _ => panic!("Unexpected Operand Type.")
+                }
+            }
+
+            _ => self.run_sgop_ins(mem, op, &oper)
+        }
 	}
 
 	pub fn run_swop_ins(&mut self, mem: &mut Memory, op: SingleOperandOpCode, oper: WOperand)
@@ -860,6 +901,9 @@ impl CPU
 						write!(log, "{:04x} -> {:04x}: {:04x} jumps to {:04x}\n", self.cs, cs, self.ip, ip).unwrap();
 					}
 				}
+
+                self.cs = cs;
+                self.ip = ip;
 			}
 			SingleOperandFCOpCode::CALL =>
 			{
@@ -878,11 +922,18 @@ impl CPU
 					self.stack_push(mem, old_cs);
 				}
 				self.stack_push(mem, old_ip);
-			}
-		}
 
-		self.cs = cs;
-		self.ip = ip;
+        		self.cs = cs;
+        		self.ip = ip;
+			}
+            SingleOperandFCOpCode::FNSTCW => {
+                if 0 < (self.get_cr0() & 0x4) {
+                    self.request_interrupt(mem, 0x02);
+                } else {
+                    panic!("FPU not implemented");
+                }
+            }
+		}
 	}
 
 	pub fn run_fcnoop_seg_ins(&mut self, mem: &Memory, op: NoOpFCOpCode)

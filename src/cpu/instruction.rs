@@ -90,7 +90,8 @@ pub enum NoOperandOpCode
 	CMC,
 	STC,
 	CLD,
-	WAIT
+	WAIT,
+    FNINIT
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -115,7 +116,9 @@ pub enum SingleOperandOpCode
 	IMUL,
 	DIV,
 	IDIV,
-	NOT
+	NOT,
+	AAM,
+    AAD
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -141,7 +144,8 @@ pub enum TwoOperandsOpCode
 pub enum SingleOperandFCOpCode
 {
 	CALL,
-	JMP
+	JMP,
+    FNSTCW
 }
 
 #[derive(Debug, Eq, PartialEq)]

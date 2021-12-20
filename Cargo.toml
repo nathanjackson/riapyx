@@ -26,6 +26,7 @@ time = "0.1"
 docopt = "0.6"
 rustc-serialize = "0.3"
 num-traits = "0.2"
+iced-x86 = "1.15.0"
 
 [[bin]]
 name = "riapyx"
