@@ -241,10 +241,21 @@ impl Storage
 {
 	pub fn new_floppy(filename: &str) -> Storage
 	{
-		Storage
-		{
+        let sz = match std::fs::metadata(filename) {
+            Ok(meta) => meta.len(),
+            _ => panic!("Failed to obtain floppy size."),
+        };
+
+        storage_print!("Floppy Image Size: {}", sz);
+        let params = match sz {
+            1474560 => DisketteParameters::floppy_1_44mb(),
+            368640 => DisketteParameters::floppy_320kb(),
+            _ => panic!("Unsupported floppy size."),
+        };
+
+		Storage {
 			file: OpenOptions::new().read(true).write(true).open(filename).unwrap(),
-			parameters: DriveParameters::Floppy(DisketteParameters::floppy_320kb())
+			parameters: DriveParameters::Floppy(params)
 		}
 	}
 
