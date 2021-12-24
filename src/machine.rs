@@ -5,7 +5,6 @@ use std::io::Write;
 
 use cpu::CPU;
 use cpu::phys_addr;
-use cpu::parse_instruction;
 use bios::BIOS;
 use hw::HW;
 use cpu::CPUState;
@@ -14,6 +13,8 @@ use bios::BootDrive;
 use mem::Memory;
 use cpu::instruction::*;
 use cpu::reg_access::*;
+
+use iced_x86::{Decoder, DecoderOptions, Formatter, Instruction, NasmFormatter};
 
 pub struct Machine
 {
@@ -149,13 +150,23 @@ impl Machine
 
 	pub fn disas(&self, seg: u16, addr_start: u16, count: u32)
 	{
+        let mut formatter = NasmFormatter::new();
+        let mut output = String::new();
+
+        let mut insn = Instruction::default();
+
 		let mut addr = addr_start;
 		for _ins_count in 0..count
 		{
 			let bytecode = self.memory.slice_from(phys_addr(seg, addr));
-			let instruction = parse_instruction(bytecode);
-			disas_print!("{:04x}:{:04x}: {}", seg, addr, instruction);
-			addr += instruction.size as u16;
+            let mut decoder = Decoder::with_ip(16, bytecode, addr as u64, DecoderOptions::NONE);
+            decoder.decode_out(&mut insn);
+            output.clear();
+            formatter.format(&insn, &mut output);
+			//let instruction = parse_instruction(bytecode);
+			disas_print!("{:04x}:{:04x}: {}", seg, addr, output);
+			//addr += instruction.size as u16;
+            addr += insn.code_size() as u16;
 		}
 	}
 
