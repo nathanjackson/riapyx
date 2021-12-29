@@ -201,8 +201,9 @@ impl Command for ChangeFloppyCommand
 {
     fn execute(&self, m: &mut machine::Machine, bpm: &mut BreakpointManager)
     {
-        m.hw.floppy = Some(storage::Storage::new_floppy(&self.filename));
-        //println!("Not yet implemented.");
+        let mut new_floppy = storage::Storage::new_floppy(&self.filename);
+        new_floppy.disk_changed = true;
+        m.hw.floppy = Some(new_floppy);
     }
 }
 

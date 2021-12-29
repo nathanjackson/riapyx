@@ -41,6 +41,7 @@ pub enum DriveParameters
 pub struct Storage
 {
 	file: File,
+    pub disk_changed: bool,
 	pub parameters: DriveParameters
 }
 
@@ -255,6 +256,7 @@ impl Storage
 
 		Storage {
 			file: OpenOptions::new().read(true).write(true).open(filename).unwrap(),
+            disk_changed: false,
 			parameters: DriveParameters::Floppy(params)
 		}
 	}
@@ -270,6 +272,7 @@ impl Storage
 		Storage
 		{
 			file: hdd_file,
+            disk_changed: false,
 			parameters: DriveParameters::HardDisk(HardDiskParameters::new(cylinders, heads, sectors_per_track))
 		}
 	}

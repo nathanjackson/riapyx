@@ -398,8 +398,14 @@ impl BIOS
 						{
 							/* Disk change is not supported */
 							bios_print!("Detect disk change for disk 0x{:02x}", drive);
-							self.clear_carry(cpu, mem);
-							cpu.set_reg(BReg::AH, 0);
+                            if storage.disk_changed {
+                                self.set_carry(cpu, mem);
+                                cpu.set_reg(BReg::AH, 0x06);
+                                storage.disk_changed = false;
+                            } else {
+							    self.clear_carry(cpu, mem);
+                                cpu.set_reg(BReg::AH, 0x0);
+                            }
 						}
                         0x18 => {
                             /* Set media type for Format */
