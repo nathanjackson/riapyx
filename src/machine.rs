@@ -164,7 +164,7 @@ impl Machine
             output.clear();
             formatter.format(&insn, &mut output);
 			//let instruction = parse_instruction(bytecode);
-			disas_print!("{:04x}:{:04x}: {}", seg, addr, output);
+			disas_print!("{:04x}:{:04x} ({:08x}): {}", seg, addr, phys_addr(seg, addr), output);
 			//addr += instruction.size as u16;
             addr += insn.code_size() as u16;
 		}
