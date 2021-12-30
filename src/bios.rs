@@ -677,6 +677,8 @@ impl BIOS
 		mem.write_u8(phys_addr(BIOS_SEGMENT, ROM_CONF_TABLE_ADDR +  9), 0b00000000); // Feature byte 5
 
 		mem.write_u16(EQUIPMENT_WORD_ADDR, EQUIPMENT_WORD); // TODO: phys_addr + BDA_SEG?
+
+        mem.write_u8(phys_addr(BIOS_SEGMENT, 0xfffe), 0xFE); // Machine ID: IBM XT
 	}
 
 	/* TODO: should be moved out of impl? */
