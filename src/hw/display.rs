@@ -249,7 +249,7 @@ impl Display
 		self.num_cols.set(mem, mode.cols() as u16);
 	}
 
-	pub fn tty_scroll(&mut self, mem: &mut Memory, page: u8, x1: u8, y1: u8, x2_: u8, y2_: u8, attr: u8)
+	pub fn tty_scroll_up(&mut self, mem: &mut Memory, page: u8, x1: u8, y1: u8, x2_: u8, y2_: u8, attr: u8)
 	{
 		let x2 = if x2_ >= self.mode.cols() as u8 { self.mode.cols() as u8 - 1 } else { x2_ };
 		let y2 = if y2_ >= self.mode.rows() as u8 { self.mode.rows() as u8 - 1 } else { y2_ };
@@ -267,6 +267,27 @@ impl Display
 		for x in x1 .. (x2 + 1)
 		{
 			mem.write_u16(topleft + (y2 as u32 * (self.mode.cols() as u32) + x as u32) * 2, (attr as u16) << 8);
+		}
+	}
+
+    pub fn tty_scroll_down(&mut self, mem: &mut Memory, page: u8, x1: u8, y1: u8, x2_: u8, y2_: u8, attr: u8)
+	{
+		let x2 = if x2_ >= self.mode.cols() as u8 { self.mode.cols() as u8 - 1 } else { x2_ };
+		let y2 = if y2_ >= self.mode.rows() as u8 { self.mode.rows() as u8 - 1 } else { y2_ };
+
+		let topleft = self.page_addr(page);
+		for y in (y1 + 1) .. (y2 + 1)
+		{
+			for x in x1 .. (x2 + 1)
+			{
+				let new = mem.read_u16(topleft + ((y as u32 - 1) * (self.mode.cols() as u32) + x as u32) * 2);
+				mem.write_u16(topleft + (y as u32 * (self.mode.cols() as u32) + x as u32) * 2, new)
+			}
+		}
+
+		for x in x1 .. (x2 + 1)
+		{
+			mem.write_u16(topleft + (y1 as u32 * (self.mode.cols() as u32) + x as u32) * 2, (attr as u16) << 8);
 		}
 	}
 
@@ -324,7 +345,7 @@ impl Display
 		{
 			let cols = self.mode.cols() as u8;
 			let rows = self.mode.rows() as u8;
-			self.tty_scroll(mem, page, 0, 0, cols, rows, 0);
+			self.tty_scroll_down(mem, page, 0, 0, cols, rows, 0);
 
 			self.cursors[page as usize].y.set(mem, new_y - 1);
 		}

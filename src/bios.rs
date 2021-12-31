@@ -192,12 +192,32 @@ impl BIOS
 						let y2 = cpu.get_reg(BReg::DH);
 						let x2 = cpu.get_reg(BReg::DL);
 						let attr = cpu.get_reg(BReg::BH);
-						bios_print!("Scroll, page={}, cnt={}; {}/{} -> {}/{}", page, cnt, x1, y1, x2, y2);
+						bios_print!("Scroll Up, page={}, cnt={}; {}/{} -> {}/{}", page, cnt, x1, y1, x2, y2);
 						for _ in 0 .. cnt
 						{
-							hw.display.tty_scroll(mem, page, x1, y1, x2, y2, attr);
+							hw.display.tty_scroll_up(mem, page, x1, y1, x2, y2, attr);
 						}
 					}
+                    0x7 =>
+                    {
+						let cnt = match cpu.get_reg(BReg::AL)
+						{
+							0 => 25,
+							x => x
+						};
+
+						let page = hw.display.cur_page();
+						let y1 = cpu.get_reg(BReg::CH);
+						let x1 = cpu.get_reg(BReg::CL);
+						let y2 = cpu.get_reg(BReg::DH);
+						let x2 = cpu.get_reg(BReg::DL);
+						let attr = cpu.get_reg(BReg::BH);
+						bios_print!("Scroll Down, page={}, cnt={}; {}/{} -> {}/{}", page, cnt, x1, y1, x2, y2);
+						for _ in 0 .. cnt
+						{
+							hw.display.tty_scroll_down(mem, page, x1, y1, x2, y2, attr);
+						}
+                    }
 					0x8 =>
 					{
 						let page = cpu.get_reg(BReg::BH);
@@ -215,6 +235,17 @@ impl BIOS
 						let cnt = cpu.get_reg(WReg::CX);
 						hw.display.write_char_at_cur(mem, page, chr, attr, cnt);
 					}
+                    0x0a =>
+                    {
+						bios_print!("Write char at pos");
+						let chr = cpu.get_reg(BReg::AL);
+                        let attr = 0; // TODO the color attribute needs to come
+                                      // from somewhere else.
+                        // TODO What attribute???
+						let page = cpu.get_reg(BReg::BH);
+						let cnt = cpu.get_reg(WReg::CX);
+						hw.display.write_char_at_cur(mem, page, chr, attr, cnt);
+                    }
 					0x0e =>
 					{
 						let char_to_print = cpu.get_reg(BReg::AL);
