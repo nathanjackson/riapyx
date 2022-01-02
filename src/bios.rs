@@ -471,6 +471,12 @@ impl BIOS
 					{
 						bios_print!("BAD IMPLEMENTATION: wait on external event");
 					}
+                    0x4f =>
+                    {
+                        bios_print!("Keyboard Intercept");
+                        self.set_carry(cpu, mem);
+                        cpu.set_reg(BReg::AH, 0x86);
+                    }
 					0x88 => 
 					{
 						bios_print!("Get extended memory size");
